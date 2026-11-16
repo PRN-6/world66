@@ -16,3 +16,4 @@ export interface TerrainBounds {
   minHeight: number
   maxHeight: number
 }
+

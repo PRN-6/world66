@@ -64,3 +64,4 @@ export function VerificationScene({ onPhysicsReady }: VerificationSceneProps) {
     </group>
   )
 }
+

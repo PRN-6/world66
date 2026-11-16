@@ -1,61 +1,37 @@
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid } from '@react-three/drei'
-import { PhysicsWorld } from '@/physics'
-import { VerificationScene } from './VerificationScene'
-import { LoadingFallback } from './LoadingFallback'
+import { Canvas, useThree } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
+import { useLayoutEffect } from 'react'
+import { OrthographicCamera, PCFShadowMap } from 'three'
+import { Backdrop } from '@/world/environment/Backdrop'
+import { ShrineWorld } from '@/world/ShrineWorld'
+import { FrameProbe } from './FrameProbe'
+import type { ShrineWorldProps } from '@/world/ShrineWorld'
 
-interface SceneProps {
-  onPhysicsReady?: () => void
+function Framing() {
+  const {camera,size}=useThree()
+  useLayoutEffect(()=>{
+    if(!(camera instanceof OrthographicCamera))return
+    // Three.js owns the camera. Resize its projection when the canvas changes.
+    // oxlint-disable-next-line react/immutability
+    camera.zoom=Math.min(size.width/23.8,size.height/19.3)
+    camera.updateProjectionMatrix()
+  },[camera,size])
+  return <OrbitControls makeDefault enablePan={false} enableDamping dampingFactor={0.075}
+    target={[0,1.1,0]} minPolarAngle={0.38} maxPolarAngle={1.29}
+    minZoom={Math.min(size.width/30,size.height/26)} maxZoom={Math.min(size.width/5,size.height/4)} />
+}
+export type SceneProps = ShrineWorldProps
+export function Scene(props:SceneProps) {
+  return <Canvas orthographic shadows={{type:PCFShadowMap}} camera={{position:[12,14.8,24],near:0.1,far:110}} dpr={[1,1.5]}
+    gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} style={{width:'100%',height:'100%',touchAction:'none'}}>
+    <Backdrop/>
+    <hemisphereLight args={['#fff0d5','#a3b6ad',1.6]}/>
+    <directionalLight position={[-8,15,9]} intensity={2.15} color="#ffe2ba" castShadow
+      shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+      shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12}
+      shadow-camera-far={45} shadow-normalBias={0.035} shadow-bias={-0.00015}/>
+    <directionalLight position={[7,8,-10]} intensity={0.85} color="#ffd5c6"/>
+    <ShrineWorld {...props}/><Framing/><FrameProbe/>
+  </Canvas>
 }
 
-/**
- * Main 3D viewport component.
- * Sets up the WebGL canvas, lights, camera controls, and physics world.
- */
-export function Scene({ onPhysicsReady }: SceneProps) {
-  return (
-    <Canvas
-      shadows
-      camera={{ position: [6, 6, 8], fov: 45 }}
-      dpr={[1, 2]}
-      className="w-full h-full"
-    >
-      <color attach="background" args={['#090d16']} />
-
-      {/* Lighting foundation */}
-      <ambientLight intensity={0.6} />
-      <directionalLight
-        position={[10, 15, 10]}
-        intensity={1.2}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-near={0.5}
-        shadow-camera-far={30}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
-      />
-
-      {/* Camera Controls */}
-      <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
-
-      {/* Spatial Reference Grid */}
-      <Grid
-        infiniteGrid
-        cellSize={0.5}
-        sectionSize={2}
-        cellColor="#334155"
-        sectionColor="#64748b"
-        fadeDistance={30}
-        fadeStrength={1}
-      />
-
-      {/* Physics World with Verification Objects */}
-      <PhysicsWorld fallback={<LoadingFallback />}>
-        <VerificationScene onPhysicsReady={onPhysicsReady} />
-      </PhysicsWorld>
-    </Canvas>
-  )
-}

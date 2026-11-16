@@ -21,3 +21,4 @@ export const CollisionGroups = {
 } as const
 
 export type CollisionGroupKey = keyof typeof CollisionGroups
+

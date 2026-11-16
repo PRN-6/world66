@@ -1,14 +1,12 @@
-/**
- * Foundation types for cat models, states, and animations.
- * Ready for future cat AI and animation systems.
- */
-
-export type CatBehaviorState = 'idle' | 'walking' | 'running' | 'sleeping' | 'sitting' | 'grooming'
+export type CatBehaviorState =
+  | 'idle' | 'roaming' | 'walking' | 'running' | 'sitting' | 'sleeping'
+  | 'playing' | 'exploring' | 'following' | 'interacting' | 'grooming'
 
 export interface CatEntity {
-  id: string
-  name?: string
-  position: [number, number, number]
-  rotation: [number, number, number]
-  state: CatBehaviorState
+  id:string
+  name?:string
+  position:[number,number,number]
+  rotation:[number,number,number]
+  state:CatBehaviorState
 }
+

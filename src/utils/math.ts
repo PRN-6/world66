@@ -13,3 +13,4 @@ export function degToRad(degrees: number): number {
 export function clamp(value: number, min: number, max: number): number {
   return THREE.MathUtils.clamp(value, min, max)
 }
+
