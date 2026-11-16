@@ -17,6 +17,15 @@ void main(){
   vec2 sun=(uv-vec2(.807,.765))*vec2(aspect,1.);
   float d=length(sun);
   col=mix(col,vec3(1.,.901,.758),.19*exp(-d*5.)+.76*(1.-smoothstep(.039,.041,d)));
+  // Narrow bands of evening cloud, with the softened edges of a woodblock print.
+  float clouds=0.;
+  for(int i=0;i<5;i++){
+    float k=float(i);
+    vec2 q=uv-vec2(.19+.15*k,.66+.085*sin(k*4.2));
+    q.y+=.0027*sin(q.x*38.+k);
+    clouds+=exp(-pow(abs(q.x)/(.075+.026*sin(k)),4.)-q.y*q.y/.000014);
+  }
+  col=mix(col,vec3(1.,.901,.812),.22*min(1.,clouds));
   float x=(uv.x-.5)*aspect;
   float a=.39+ridge(x,1.27);
   col=mix(col,vec3(.699,.747,.741),.68*(1.-smoothstep(a,a+.004,y)));
@@ -30,10 +39,18 @@ void main(){
 }`
 import { useThree } from '@react-three/fiber'
 export function Backdrop() {
-  const size=useThree(s=>s.size)
-  return <mesh frustumCulled={false} renderOrder={-100}>
-    <planeGeometry args={[1,1]}/>
-    <shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={{aspect:{value:size.width/size.height}}} depthWrite={false} depthTest={false} toneMapped={false}/>
-  </mesh>
+  const size = useThree((s) => s.size)
+  return (
+    <mesh frustumCulled={false} renderOrder={-100}>
+      <planeGeometry args={[1, 1]} />
+      <shaderMaterial
+        vertexShader={vertex}
+        fragmentShader={fragment}
+        uniforms={{ aspect: { value: size.width / size.height } }}
+        depthWrite={false}
+        depthTest={false}
+        toneMapped={false}
+      />
+    </mesh>
+  )
 }
-

@@ -1,118 +1,59 @@
-# 3D Cat Shrine World - Development Foundation
+# Japanese Cat Shrine
 
-A browser-based 3D environment project: a peaceful, cozy Japanese shrine garden populated by adorable cats.
+An orbitable Japanese shrine garden built with React Three Fiber, Three.js and Rapier. Five articulated cats share two koi ponds, an arched bridge, a shrine path and two physical temari balls. All geometry, coats and textures are generated locally.
 
-This repository provides the core technical foundation and development environment, configured with React, TypeScript, Vite, Three.js, React Three Fiber, Drei, and Rapier Physics.
+## Run the garden
 
----
+Use the installed dependencies and Node 24.
 
-## Tech Stack
-
-- **Framework**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Bundler**: [Vite](https://vite.dev/)
-- **3D Graphics**: [Three.js](https://threejs.org/)
-- **React 3D Renderer**: [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber/)
-- **R3F Ecosystem Helpers**: [@react-three/drei](https://github.com/pmndrs/drei)
-- **Physics Engine**: [@react-three/rapier](https://github.com/pmndrs/react-three-rapier) (Rapier3D WebAssembly)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-
----
-
-## Folder Structure
-
-```
-src/
-├── assets/                 # Static 3D/audio assets
-│   ├── audio/              # Sound effects, ambient sounds, music
-│   ├── models/             # 3D assets (.gltf, .glb)
-│   └── textures/           # PBR texture maps, skyboxes, decals
-├── cats/                   # Cat subsystem
-│   ├── ai/                 # Behavior trees, state machines, wandering logic
-│   ├── animations/         # Skeletal animation controllers and blending
-│   └── models/             # Cat 3D model loaders and variants
-├── components/             # Reusable UI & 3D components
-│   ├── LoadingFallback.tsx # Suspense fallback during asset/WASM loads
-│   ├── Scene.tsx           # Primary 3D Canvas, lights, camera & controls
-│   └── VerificationScene.tsx # Minimal physics & WebGL verification scene
-├── hooks/                  # Custom React hooks (input, audio, game loop)
-├── physics/                # Physics architecture and wrappers
-│   ├── PhysicsWorld.tsx    # Configured Rapier Physics container with Suspense
-│   └── index.ts            # Physics exports & hooks (useRapier, RigidBody)
-├── systems/                # Core systems (audio manager, time of day, input)
-├── types/                  # TypeScript interfaces and domain models
-│   ├── cat.ts              # Cat behavior states and entities
-│   ├── physics.ts          # Physics configuration and collision groups
-│   ├── world.ts            # World settings and terrain bounds
-│   └── index.ts            # Unified type exports
-├── utils/                  # Math, coordinate conversion, and helper utilities
-│   ├── math.ts             # Math helpers (degToRad, clamp)
-│   └── index.ts
-├── world/                  # 3D Environment systems
-│   ├── architecture/       # Shrine buildings, torii gates, lanterns, bridges
-│   ├── environment/        # Sky, lighting, fog, day/night cycle
-│   ├── terrain/            # Ground mesh, stones, gravel paths
-│   ├── vegetation/         # Cherry blossoms, bamboo, moss, foliage
-│   └── water/              # Ponds, streams, reflection shaders
-├── App.tsx                 # Root application component with status HUD
-├── index.css               # Global Tailwind CSS and canvas layout styles
-└── main.tsx                # React DOM root entry point
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- **Node.js**: v18+ (tested on Node v24)
-- **npm**: v9+ (tested on npm v11)
-
-### 1. Install Dependencies
-
-```bash
-npm install
-```
-
-### 2. Start Development Server
-
-```bash
+```sh
 npm run dev
 ```
 
-The Vite dev server will launch at:
-```
-http://localhost:5173/
+Drag to orbit and scroll or pinch to zoom. Click or tap a cat to pet it. Click or tap a patterned ball to bat it across the garden.
+
+## Embed the world
+
+`Scene` supplies a responsive canvas, orthographic camera, lighting and orbit controls. Give its parent a height.
+
+```tsx
+import { Scene } from "./components/Scene";
+
+export function GardenPanel() {
+  return (
+    <section style={{ height: "75vh" }}>
+      <Scene seed={66} />
+    </section>
+  );
+}
 ```
 
-### 3. Build for Production
+When the host already owns the R3F canvas and lighting, mount `ShrineWorld` from `src/world` inside that canvas. It owns its Rapier context. The garden spans 16 × 16 units with ground at `y = 0`, and the front gate faces positive Z. The existing verification scene remains available from `src/components`.
 
-```bash
+Both entries accept the following optional props.
+
+| Prop               | Behavior                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `seed`             | Seeds behavioral choices. Changing it starts a fresh colony and resets the toys. Defaults to 66. |
+| `onPhysicsReady()` | Fires after the first physics step of each simulation.                                           |
+| `onCatPet(name)`   | Reports the resident that the visitor petted.                                                    |
+
+## Systems
+
+- `src/world/layout.ts` and `obstacles.ts` describe landmarks, pond banks, paths and clearance. Navigation and physics share this layout.
+- `src/world/architecture`, `terrain` and `vegetation` construct the miniature. Repeated parts are instanced, with painted ground shading and a cached directional shadow map in the standalone scene.
+- `src/world/water` and `environment` animate koi, reflections, ripples, wind and drifting petals.
+- `src/cats/profiles.ts` defines appearances and personality weights. `models/catRig.ts` builds one skinned mesh per resident, and `animations/pose.ts` blends poses.
+- `src/cats/ai` chooses destinations and uses a shared grid, swept edges and A* routes. Movement runs at a fixed timestep. Each cat makes decisions on a staggered schedule and replans around blocked passages.
+- `src/physics` owns fixed colliders and dynamic toys. Kinematic cat colliders follow the animated residents. The Rapier bundle loads after the environment can render.
+
+## Verification
+
+```sh
+npm run lint
+npm test
 npm run build
-```
-
-Build artifacts will be emitted to `dist/`.
-
-### 4. Preview Production Build
-
-```bash
 npm run preview
 ```
 
----
-
-## Verification & Architecture Notes
-
-### WebGL & R3F Rendering
-- R3F `Canvas` configured in `src/components/Scene.tsx` with shadow mapping, responsive DPR `[1, 2]`, and Drei `OrbitControls` for smooth scene inspection.
-- Ground reference grid is rendered via Drei `<Grid>` to assist coordinate alignment during world building.
-
-### Rapier Physics Integration
-- Rapier 3D WebAssembly physics is managed by `<PhysicsWorld>` in `src/physics/PhysicsWorld.tsx`.
-- Because Rapier loads its WebAssembly binary asynchronously, it is safely enclosed within React `<Suspense>` boundaries.
-- Collision filtering bitmasks are declared in `src/types/physics.ts` (`CollisionGroups`) for clean separation between terrain, architecture, and cats.
-- A minimal dynamic physics cube falls under gravity onto a static platform to verify simulation stepping in real time.
-
-### Extension Points for World & Cat Implementation
-- **Shrine & Environment**: Build modules inside `src/world/` (`architecture/`, `environment/`, `terrain/`, `vegetation/`, `water/`).
-- **Cat AI & Models**: Add models and behaviors inside `src/cats/` using the type definitions in `src/types/cat.ts`.
-- **Global Systems**: Implement time-of-day or interaction controllers inside `src/systems/`.
+The Node tests use the production navigation, decision model, collider layout and Rapier WASM. They exercise all garden destinations, peer avoidance, independent behavior, physical swats, containment and lost-toy recovery.
